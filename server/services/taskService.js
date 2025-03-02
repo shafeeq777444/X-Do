@@ -40,13 +40,19 @@ export const getTaskById = async (taskId, userId) => {
  */
 export const updateTask = async (taskId, userId, taskData) => {
     console.log("i am updatecontroller");
+    console.log(taskData,"taskDat")
     const task = await Task.findOne({_id: taskId, userId: userId, isDeleted: false });
 
     if (!task) {
         throw new CustomError("Task not found", 404);
     }
+    // Handle attachments properly
+    if (taskData.attachments === "[]") {
+        taskData.attachments = []; // Convert back to an empty array
+    }
 
     Object.assign(task, taskData);
+    
     await task.save();
     return task;
 };
@@ -88,6 +94,24 @@ export const dragTaskUpdateService = async (tasks) => {
 
     return Task.bulkWrite(dragOperations);
 };
+
+/**
+ * Update a attachments
+ */
+export const updateAttachments = async (taskId,userId,  newAtt) => {
+    console.log(newAtt,"newAttPath")
+    console.log("i am updataAttachcments");
+    const task = await Task.findOne({_id: taskId,userId: userId,  isDeleted: false });
+
+    if (!task) {
+        throw new CustomError("Task not found", 404);
+    }
+
+    task.attachments = [...task.attachments, ...newAtt];
+    await task.save();
+    return task;
+};
+
 
 /**
  * generate pdf

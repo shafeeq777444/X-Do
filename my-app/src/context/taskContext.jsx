@@ -144,7 +144,33 @@ export const TaskProvider = ({ children }) => {
             console.error("Error updating tasks:", error);
         }
     };
-
+/**
+     * updateAttachment
+     */
+const addNewAttachment = async (id,newAtt) => {
+    console.log(id,"id check")
+    try {
+        console.log(newAtt,"newAtt")
+        const formData = new FormData();
+        if (newAtt instanceof FileList || Array.isArray(newAtt)) {
+            // ✅ If newAtt is a FileList, append all files
+            for (let i = 0; i < newAtt.length; i++) {
+                formData.append("attachments", newAtt[i]);
+            }
+        } else {
+            // ✅ If it's a single file, append it directly
+            formData.append("attachments", newAtt);
+        }
+        const response = await axios.patch(`http://localhost:4200/api/tasks/newAttachment/${id}`,formData, {
+            withCredentials: true,
+         
+        });
+        console.log(response.data)
+        // setTasks([...tasks, data]);
+    } catch (error) {
+        console.error("Error adding Attachment", error);
+    }
+};
     return (
         <TaskContext.Provider
             value={{
@@ -159,6 +185,7 @@ export const TaskProvider = ({ children }) => {
                 setTasks,
                 updateDrag,
                 statuses,
+                addNewAttachment
             }}
         >
             {children}

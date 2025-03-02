@@ -1,7 +1,7 @@
 
 import asyncHandler from "../middlewares/asyncHandler.js";
 import { broadcastUpdate } from "../server.js";
-import { createTask, getUserTasks,  updateTask, deleteTask ,getTaskById,generateTaskPDFService, dragTaskUpdateService} from "../services/taskService.js";
+import { createTask, getUserTasks,updateAttachments,  updateTask, deleteTask ,getTaskById,generateTaskPDFService, dragTaskUpdateService} from "../services/taskService.js";
 import fs from "fs";
 
 /**
@@ -55,6 +55,18 @@ export const deleteTaskController = asyncHandler(async (req, res) => {
   broadcastUpdate({ type: "TASK_DELETED", taskId: req.params.id });
 
   res.json(response);
+});
+
+/**
+ * addAttachment
+ */
+export const addFileController = asyncHandler(async (req, res) => {
+  console.log(req.params.id,"param id")
+  const task = await updateAttachments(req.params.id,req.user.id,  req.files.map(file => file.path));  
+  console.log(req.files,"filesssss")
+  broadcastUpdate({ type: "TASK_UPDATED", task });
+  res.json(task)
+  
 });
 
 /**

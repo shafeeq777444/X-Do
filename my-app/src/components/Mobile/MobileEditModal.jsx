@@ -1,127 +1,144 @@
 import { useTasks } from "@/context/taskContext";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 
 const MobileEditModal = ({ editTask, setEditTask }) => {
-  const [newFiles, setNewFiles] = useState([]);
-  const [isEditing, setIsEditing] = useState(false);
-  const { updateTask } = useTasks();
-  const BASE_URL = "http://localhost:4200";
+    const [newFiles, setNewFiles] = useState([]);
+    const [isEditing, setIsEditing] = useState(false);
+    const fileInputRef = useRef(null);
+    const { updateTask, addNewAttachment } = useTasks();
+    const BASE_URL = "http://localhost:4200";
 
-  const handleEditChange = (e) => {
-    setEditTask({ ...editTask, [e.target.name]: e.target.value });
-  };
+    const handleButtonClick = () => fileInputRef.current.click();
 
-  const handleSaveEdit = async () => {
-    const formData = new FormData();
-    formData.append("title", editTask.title);
-    formData.append("description", editTask.description);
-    formData.append("dueDate", editTask.dueDate);
-    formData.append("status", editTask.status);
-    formData.append("order", editTask.order);
-    formData.append("userId", editTask.userId);
+    const handleEditChange = (e) => {
+        setEditTask({ ...editTask, [e.target.name]: e.target.value });
+    };
 
-    if (editTask.attachments && Array.isArray(editTask.attachments)) {
-      editTask.attachments.forEach((file) => {
-        formData.append("attachments", file);
-      });
+    const handleSaveEdit = async () => {
+      console.log(editTask, "editTask");
+      const formData = new FormData();
+      formData.append("title", editTask.title);
+      formData.append("description", editTask.description);
+      formData.append("dueDate", editTask.dueDate);
+      formData.append("status", editTask.status);
+      formData.append("order", editTask.order);
+      formData.append("userId", editTask.userId);
+      if (Array.isArray(editTask.attachments) && editTask.attachments.length > 0) {
+        console.log(editTask.attachments, "attachments");
+        editTask.attachments.forEach((file) => {
+            formData.append("attachments", file);
+        });
+    } else {
+        formData.append("attachments", JSON.stringify([])); // Send empty array as a string
     }
 
-    await updateTask(editTask._id, formData);
-    setEditTask(null);
-  };
-
-  const handleAttachmentChange = (e) => {
-    const files = e.target.files;
-    const newAttachments = [...(editTask.attachments || [])];
-    for (let i = 0; i < files.length; i++) {
-      newAttachments.push(files[i].name);
+    // Log FormData to debug
+    console.log("Logging FormData:");
+    for (let pair of formData.entries()) {
+        console.log(pair[0], pair[1]);
     }
-    setEditTask({ ...editTask, attachments: newAttachments });
+      await updateTask(editTask._id, formData);
+      console.log(editTask.attachments,"editAttachemnts")
+      console.log("Logging FormData:");
+    for (let pair of formData.entries()) {
+        console.log(pair[0], pair[1]);
+    }
+      
+          await addNewAttachment(editTask._id, newFiles);
+        
+      
+      setEditTask(null);
+      setNewFiles([]);
   };
 
-  const handleRemoveAttachment = (index) => {
-    const updatedAttachments = editTask.attachments.filter((_, i) => i !== index);
-    setEditTask({ ...editTask, attachments: updatedAttachments });
-  };
+    const handleAttachmentChange = (e) => {
+      const files = Array.from(e.target.files); // Convert FileList to an array
+      const existingAttachments = editTask.attachments || []; // Ensure it's an array
 
-  if (!editTask) return null;
+      const newAtt = files.filter(
+          (file) => !existingAttachments.some((att) => att.split("-")[1] === file.name) // Compare by file name
+      );
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-      <div className="bg-white p-4 sm:p-6 rounded-lg shadow-lg w-full sm:w-2/3 md:w-1/3">
-        {/* Title (Editable) */}
-        <div className="w-full p-2 mb-2 transition hover:bg-gray-200 rounded">
-          {isEditing ? (
-            <input
-              type="text"
-              name="title"
-              value={editTask.title}
-              onChange={handleEditChange}
-              className="w-full p-2 rounded border focus:ring-0 focus:outline-none"
-              autoFocus
-              onBlur={() => setIsEditing(false)}
-            />
-          ) : (
-            <h3 className="text-xl sm:text-2xl font-bold">{editTask.title || "Task title..."}</h3>
-          )}
+      if (newAtt) {
+          setNewFiles([...newFiles, ...newAtt]);
+      }
+    };
+
+    const handleRemoveNewFile = (index) => setNewFiles(newFiles.filter((_, i) => i !== index));
+
+    const handleRemoveAttachment = (index) => {
+        const updatedAttachments = editTask.attachments.filter((_, i) => i !== index);
+        setEditTask({ ...editTask, attachments: updatedAttachments });
+    };
+
+    if (!editTask) return null;
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 h-full">
+            <div className="bg-white  p-4 rounded-lg shadow-lg w-full max-w-lg md:w-1/3">
+                <div className="w-full p-2 mb-2" onClick={() => setIsEditing(true)}>
+                    {isEditing ? (
+                        <input
+                            type="text"
+                            name="title"
+                            value={editTask.title}
+                            onChange={handleEditChange}
+                            className="w-full p-2 rounded focus:ring-0 focus:outline-none"
+                            autoFocus
+                            onBlur={() => setIsEditing(false)}
+                        />
+                    ) : (
+                        <h3 className="text-xl font-bold break-words">{editTask.title || "Task title..."}</h3>
+                    )}
+                </div>
+                <label htmlFor="discription" className="text-sm font-semibold p-2">Description:</label>
+                <textarea
+                    name="description"
+                    value={editTask.description}
+                    onChange={handleEditChange}
+                    className="w-full p-2 rounded mb-2 focus:ring-0 focus:outline-gray-200 resize-none"
+                    placeholder="Task description..."
+                />
+                <label htmlFor="dueDate" className="text-sm font-semibold p-2">Date:</label>
+                <input
+                    type="date"
+                    name="dueDate"
+                    value={editTask.dueDate ? editTask.dueDate.split("T")[0] : ""}
+                    onChange={handleEditChange}
+                    className="w-full p-2 rounded mb-2 focus:ring-0 focus:outline-gray-200 "
+                />
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    onChange={handleAttachmentChange}
+                    className="hidden"
+                />
+                <button onClick={handleButtonClick} className="bg-gray-200 px-3 py-1 mb-2 rounded">+</button>
+                <div className="mt-2 max-h-40 overflow-y-auto">
+                    {editTask.attachments?.map((attachment, index) => (
+                        <div key={index} className="flex items-center justify-between bg-gray-100 p-2 rounded mb-1">
+                            <a href={`${BASE_URL}/${attachment}`} target="_blank" className="truncate">
+                                {attachment.split("-").pop()}
+                            </a>
+                            <button onClick={() => handleRemoveAttachment(index)} className="text-red-500">🗑</button>
+                        </div>
+                    ))}
+                </div>
+                <div className="mt-2 max-h-40 overflow-y-auto">
+                    {newFiles.map((file, index) => (
+                        <div key={index} className="flex items-center justify-between bg-gray-200 p-2 rounded mb-1">
+                            <span className="truncate">{file.name}</span>
+                            <button onClick={() => handleRemoveNewFile(index)} className="text-red-500">🗑</button>
+                        </div>
+                    ))}
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                    <button onClick={() => setEditTask(null)} className="bg-gray-300 px-4 py-2 rounded">Cancel</button>
+                    <button onClick={handleSaveEdit} className="bg-black text-white px-4 py-2 rounded">Save</button>
+                </div>
+            </div>
         </div>
-
-        {/* Description */}
-        <h2 className="text-sm font-semibold p-2">Description:</h2>
-        <textarea
-          name="description"
-          value={editTask.description}
-          onChange={handleEditChange}
-          className="w-full px-2 rounded mb-2 border focus:ring-0 focus:outline-gray-200 resize-none"
-          placeholder="Task description..."
-        />
-
-        {/* Due Date */}
-        <div>
-          <h2 className="text-sm font-semibold p-2">Date:</h2>
-          <input
-            type="date"
-            name="dueDate"
-            value={editTask.dueDate ? editTask.dueDate.split("T")[0] : ""}
-            onChange={handleEditChange}
-            className="w-full px-2 p-2 rounded border focus:ring-0 focus:outline-none"
-          />
-        </div>
-
-        {/* File Input */}
-        <input type="file" multiple onChange={handleAttachmentChange} className="w-full p-2 mb-2 rounded border" />
-
-        {/* Existing Attachments */}
-        {editTask.attachments?.length > 0 && (
-          <div className="mb-2 max-h-40 sm:max-h-64 overflow-y-auto">
-            {editTask.attachments.map((attachment, index) => (
-              <div key={index} className="flex items-center justify-between p-2 border rounded mb-1">
-                <a href={`${BASE_URL}/${attachment}`} target="_blank" className="text-blue-500 underline truncate">
-                  {attachment.split("-").pop()}
-                </a>
-                <button
-                  onClick={() => handleRemoveAttachment(index)}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  🗑
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Buttons */}
-        <div className="flex justify-end gap-2 pt-2">
-          <button onClick={() => setEditTask(null)} className="bg-white border px-4 py-2 rounded text-black hover:bg-gray-100 text-sm">
-            Cancel
-          </button>
-          <button onClick={handleSaveEdit} className="bg-black text-white px-4 py-2 rounded text-sm hover:bg-gray-800">
-            Save
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default MobileEditModal;

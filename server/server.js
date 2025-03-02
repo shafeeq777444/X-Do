@@ -34,6 +34,7 @@ app.use(passport.session());
 // Routes
 app.use("/api/auth",authRoutes)
 app.use("/api/tasks",taskRoutes)
+// get file data display or download
 app.use('/uploads', express.static('uploads'));
 
 // WebSocket Connection Handling
