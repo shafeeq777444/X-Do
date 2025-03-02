@@ -18,7 +18,7 @@ const MobileKanban = () => {
     
 
     return (
-        <div className="md:hidden space-y-2 h-screen">
+        <div className="md:hidden  h-screen">
             {statuses.map((status) => (
                 <div key={status} className="bg-gray-100 p-4 rounded-lg shadow-md">
                     <button
